@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ball Game</title>
+
+    <!--semantic ui CSS-->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.4.1/semantic.min.css"
+        integrity="sha512-8bHTC73gkZ7rZ7vpqUQThUDhqcNFyYi2xgDgPDHc+GXVGHXq+xPjynxIopALmOPqzo9JZj0k6OqqewdGO3EsrQ=="
+        crossorigin="anonymous" />
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        .sansserif {
+            font-family: Arial, Helvetica, sans-serif;
+        }
+    </style>
+</head>
+
+<body>
+    <!--instruction modal-->
+    <div class="ui coupled first basic tiny modal">
+        <div class="ui large header">Instructions</div>
+        <div style="font-size: medium;" class="content">
+            <p>press <i class="caret square left icon"></i> to move the bottom board left</p>
+            <p>press <i class="caret square right icon"></i> to move the bottom board right</p>
+            <p>move the board to dodge <img class="ui avatar mini image" src="images/bomb_inline.png"></p>
+        </div>
+        <div class="actions">
+            <div class="ui green inverted positive button">
+                OK
+            </div>
+        </div>
+    </div>
+    <!--setting modal-->
+    <div id="setting" class="ui coupled second basic tiny modal">
+        <div class="ui large header">Setting</div>
+        <div style="font-size: medium;" class="content">
+            <div class="ui form">
+                <div class="inline fields">
+                    <label style="color: white; font-size: small;" for="speed">Ball Speed:</label>
+                    <div class="field">
+                        <div class="ui radio checkbox">
+                            <input type="radio" name="speed" value="3">
+                            <label style="color: white;">Slow</label>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <div class="ui radio checkbox">
+                            <input type="radio" name="speed" value="5" checked="">
+                            <label style="color: white;">Medium</label>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <div class="ui radio checkbox">
+                            <input type="radio" name="speed" value="7">
+                            <label style="color: white;">Fast</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="inline fields">
+                    <label style="color: white; font-size: small;" for="bomb">Bomb drop:</label>
+                    <div class="field">
+                        <div class="ui radio checkbox">
+                            <input type="radio" name="bomb" value="0" checked="">
+                            <label style="color: white;">No</label>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <div class="ui radio checkbox">
+                            <input type="radio" name="bomb" value="3" checked="">
+                            <label style="color: white;">a few</label>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <div class="ui radio checkbox">
+                            <input type="radio" name="bomb" value="5">
+                            <label style="color: white;">a lot</label>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+        <div class="actions">
+            <div id="submit" class="ui green inverted positive button">
+                Start
+            </div>
+        </div>
+    </div>
+    <!--end game modal-->
+    <div id="result" class="ui basic mini modal">
+        <div class="ui large header">
+            Game Over
+        </div>
+        <div class="content">
+            <p id="record" class="sansserif"></p>
+        </div>
+        <div class="actions">
+            <div id="GoSet" class="ui red inverted button">
+                <i class="cog icon"></i>
+                Setting
+            </div>
+            <div id="restart" class="ui green inverted button">
+                <i class="redo icon"></i>
+                Restart
+            </div>
+        </div>
+    </div>
+
+    <!--main-->
+    <div>
+        <div>
+            <p id="counter">00:00</p>
+        </div>
+        <canvas id="canvas"></canvas>
+    </div>
+
+    <!--jQuery-->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.js"
+        integrity="sha512-WNLxfP/8cVYL9sj8Jnp6et0BkubLP31jhTG9vhL/F5uEZmg5wEzKoXp1kJslzPQWwPT1eyMiSxlKCgzHLOTOTQ=="
+        crossorigin="anonymous"></script>
+
+    <!--semantic ui JS-->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.4.1/semantic.min.js"
+        integrity="sha512-dqw6X88iGgZlTsONxZK9ePmJEFrmHwpuMrsUChjAw1mRUhUITE5QU9pkcSox+ynfLhL15Sv2al5A0LVyDCmtUw=="
+        crossorigin="anonymous"></script>
+
+    <script>
+        //modals setting
+        $('.modal').modal({ allowMultiple: false, closable: false }); /*.coupled*/
+        $('.second.modal').modal('attach events', '.first.modal .button');
+        $("#result").modal({ closable: false });
+
+        //data input
+        let input = document.getElementsByTagName('input');
+        //counter
+        let counter = document.getElementById("counter");
+        //record
+        let record = document.getElementById("record");
+        //result modal button
+        let GoSet = document.getElementById("GoSet");
+        let restart = document.getElementById("restart");
+
+        //color
+        let red = "#dc3545";
+        let blue = "#007bff";
+        //canvas size
+        const canvasWidth = 700;
+        const canvasHeight = 500;
+        //canvas setting
+        var canvas = document.getElementById('canvas');
+        canvas.style.backgroundColor = "#343a40"; //dark
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
+
+        //ball 
+        var ball = canvas.getContext("2d");
+        ball.fillStyle = blue;
+
+        //board size
+        const boardWidth = 150;
+        const boardHeight = 10;
+        //board setting
+        let board = new Image();
+        board.src = 'images/board.png';
+        //board control
+        document.addEventListener('keydown', function (e) {
+            if (e.key === "ArrowRight") {
+                if (boardX >= canvasWidth - boardWidth) {
+                    boardX = canvasWidth - boardWidth;
+                } else {
+                    boardX += 15;
+                }
+            }
+            if (e.key === "ArrowLeft") {
+                if (boardX <= 0) {
+                    boardX = 0;
+                } else {
+                    boardX -= 15;
+                }
+            }
+        });
+
+        //bomb size
+        const bombWidth = 15;
+        const bombHeight = 45;
+        //bomb setting
+        let bomb = new Image();
+        bomb.src = 'images/bomb.png';
+
+        //data that needs to renew per game -------------------------------
+
+        //ball parameter
+        let upDown = 1;
+        let leftRight = 1;
+        let ballX = Math.floor(Math.random() * (canvasWidth - 30)) + 15;
+        let ballY = 15;
+        let speed = 5;
+        //board parameter
+        let boardX = canvasWidth / 2 - boardWidth / 2;
+        const boardY = canvasHeight - boardHeight;
+        //bomb parameter
+        let bombNum = 2;
+        let bombX = [];
+        let bombY = [];
+        let collideBomb = false;
+
+        //counter    
+        let time = 0;
+        let minute = "00";
+        let second = "00";
+        //interval container
+        let timer = 0;
+        let start = 0;
+
+        //-----------------------------------------------------------------
+
+        function GameData(input) {
+            //test
+            let game_data = [];
+            for (let i = 0; i < input.length; i++) {
+                if (input[i].checked === true) {
+                    game_data.push(input[i].value);
+                }
+            }
+            return game_data;
+        }
+
+        function Clock() {
+            time += 1;
+            //padStart() for 2-digit format
+            minute = Math.floor(time / 60).toString().padStart(2, "0");
+            second = (time % 60).toString().padStart(2, "0");
+            counter.innerHTML = minute + ":" + second;
+        }
+
+        function ChangeColor(color1, color2, period) {
+            ball.fillStyle = color1;
+            setTimeout(function () {
+                ball.fillStyle = color2;
+            }, period);
+        }
+
+        function CheckCollide() {
+            //collide wall
+            if (ballX <= 10 || ballX >= canvasWidth - 10) {
+                leftRight *= -1;
+                ChangeColor(red, blue, 300);
+            }
+            if (ballY <= 10) {
+                upDown *= -1;
+                ChangeColor(red, blue, 300);
+            }
+
+            //collide board
+            //在下降時碰到才算
+            if (ballY >= canvasHeight - boardHeight - 10 && ballX >= boardX && ballX <= boardX + boardWidth && upDown === 1) {
+                upDown *= -1;
+                ChangeColor(red, blue, 300);
+            }
+        }
+
+        function SetParameter(data) {
+            //ball parameter
+            upDown = 1;
+            leftRight = 1;
+            ballX = Math.floor(Math.random() * (canvasWidth - 30)) + 15;
+            ballY = 15;
+            //ball speed
+            speed = Number(data[0]);
+            //board parameter
+            boardX = canvasWidth / 2 - boardWidth / 2;
+            //boardY never change
+
+            //bomb parameter
+            bombNum = Number(data[1]);
+            bombX = [];
+            bombY = [];
+            for (let i = 0; i < bombNum; i++) {
+                bombX.push(Math.floor(Math.random() * (canvasWidth - bombWidth)));
+                bombY.push(0);
+            }
+            collideBomb = false;
+
+            //counter    
+            time = 0;
+            minute = "00";
+            second = "00";
+
+            //interval container
+            timer = 0;
+            start = 0;
+        }
+
+        function TerminateCheck() {
+            //collide board & bomb
+            collideBomb = bombY[0] >= boardY - bombHeight && bombX[0] >= boardX - bombWidth && bombX[0] <= boardX + boardWidth;
+            if (ballY >= canvasHeight || collideBomb === true) {
+                //ball.clearRect(0, 0, canvasWidth, canvasHeight);
+
+                //clear interval
+                clearInterval(start);
+                clearInterval(timer);
+
+                //insert record
+                record.innerHTML = "Play Time = " + minute + ":" + second;
+                //display result
+                $("#result").modal('show');
+                return;
+            }
+        }
+
+        function Frame() {
+            //clear canvas
+            ball.clearRect(0, 0, canvasWidth, canvasHeight);
+
+            //draw bomb
+            for (let i = 0; i < bombNum; i++) {
+                if (i === 0) {
+                    //第一顆炸彈
+                    ball.drawImage(bomb, bombX[i], bombY[i], bombWidth, bombHeight);
+                } else if (bombY[i - 1] > 100) {
+                    //前一顆炸彈已經出現一段時間再放一顆
+                    ball.drawImage(bomb, bombX[i], bombY[i], bombWidth, bombHeight);
+                }
+                //outside check
+                if (bombY[i] >= canvasHeight) {
+                    bombX.shift();
+                    bombX.push(Math.floor(Math.random() * (canvasWidth - bombWidth)));
+                    bombY.shift();
+                    bombY.push(0);
+                }
+            }
+
+            //draw board
+            ball.drawImage(board, boardX, boardY, boardWidth, boardHeight);
+
+            //draw ball
+            ball.beginPath();
+            ball.arc(ballX, ballY, 10, 0, 2 * Math.PI); //x(center), y(center), radius, start_angle, end_angle
+            ball.fill();
+            //collide check (wall & board)
+            CheckCollide();
+
+            //stop 
+            TerminateCheck();
+
+            //bomb position update
+            for (let i = 0; i < bombNum; i++) {
+                if (i === 0) {
+                    bombY[i] += 3;
+                } else if (bombY[i - 1] > 100) {
+                    bombY[i] += 3;
+                }
+            }
+            //ball position update
+            ballX += speed * leftRight;
+            ballY += speed * upDown;
+        }
+
+        function StartGame() {
+            //clear canvas
+            ball.clearRect(0, 0, canvasWidth, canvasHeight);
+
+            //game data
+            let data = GameData(input);
+
+            //set game parameter
+            SetParameter(data);
+
+            //reset counter display
+            counter.innerHTML = "00:00";
+
+            //counter
+            timer = setInterval(Clock, 1000);
+
+            //start
+            start = setInterval(Frame, 15);
+        }
+
+        //initialization
+        $('.first.modal').modal('show');
+        //start button
+        $("#submit").click(StartGame);
+
+        //result modal button
+        GoSet.addEventListener('click', function () {
+            $("#setting").modal('show');
+        });
+        restart.addEventListener('click', function () {
+            $("#result").modal('hide');
+            StartGame();
+        });
+
+    </script>
+</body>
+
+</html>

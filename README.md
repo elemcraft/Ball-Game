@@ -1,2 +1,2 @@
 # Ball-Game
-https://elercraft.github.io/Ball-Game/ball_game.html
+https://elemcraft.github.io/Ball-Game/ball_game.html
